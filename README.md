@@ -46,14 +46,14 @@ cp terraform.tfvars.example terraform.tfvars
 Edit `terraform.tfvars`:
 
 ```hcl
-source_bucket = "fg-sftp-server"
+source_bucket = "bucket-sftp-server"
 destination_buckets = [
-  "vh-punchh-prod",
-  "vh-alohasales-prod", 
-  "vh-inventory-prod"
+  "bucket-loyalty-prod",
+  "bucket-sales-prod", 
+  "bucket-inventory-prod"
 ]
 aws_region = "us-east-2"
-config_bucket = "fg-sftp-server"
+config_bucket = "bucket-sftp-server"
 config_file_key = "config/routing-rules.json"
 ```
 
@@ -62,7 +62,7 @@ config_file_key = "config/routing-rules.json"
 Upload your routing configuration to S3:
 
 ```bash
-aws s3 cp routing-rules.json s3://fg-sftp-server/config/routing-rules.json
+aws s3 cp routing-rules.json s3://bucket-sftp-server/config/routing-rules.json
 ```
 
 ### 4. Deploy
@@ -82,21 +82,21 @@ Store routing rules as JSON in S3. Each rule defines how to route files:
 ```json
 [
   {
-    "name": "Punchh CheckIns - checkin- files only",
+    "name": "Loyalty CheckIns - checkin- files only",
     "priority": 1,
-    "source_pattern": "Punchh/",
+    "source_pattern": "loyalty/",
     "pattern_type": "prefix_with_filename_filter",
     "filename_filter": {
       "type": "starts_with",
       "value": "checkin-",
       "case_sensitive": false
     },
-    "destination_bucket": "vh-punchh-prod",
+    "destination_bucket": "bucket-loyalty-prod",
     "destination_prefix": "CheckIns/raw/",
     "file_types": [".csv"],
     "add_timestamp": true,
     "delete_source": true,
-    "description": "Process Punchh check-in files to raw folder",
+    "description": "Process loyalty check-in files to raw folder",
     "enabled": true
   }
 ]
@@ -138,15 +138,15 @@ Store routing rules as JSON in S3. Each rule defines how to route files:
 ### Example 1: Route Check-in Files
 ```json
 {
-  "name": "App CheckIns",
+  "name": "Loyalty CheckIns",
   "priority": 1,
-  "source_pattern": "App/",
+  "source_pattern": "loyalty/",
   "pattern_type": "prefix_with_filename_filter",
   "filename_filter": {
     "type": "starts_with",
     "value": "checkin-"
   },
-  "destination_bucket": "bucket-app-prod",
+  "destination_bucket": "bucket-loyalty-prod",
   "destination_prefix": "CheckIns/raw/",
   "file_types": [".csv"]
 }
@@ -155,7 +155,7 @@ Store routing rules as JSON in S3. Each rule defines how to route files:
 ### Example 2: Route All Sales Files
 ```json
 {
-  "name": "Sales Data",
+  "name": "Sales Summary Data",
   "priority": 10,
   "source_pattern": "sales/",
   "pattern_type": "prefix",
@@ -177,12 +177,12 @@ Store routing rules as JSON in S3. Each rule defines how to route files:
 ### Processing Flow
 
 ```
-File: "app/checkin-daily-20250126.csv"
+File: "loyalty/checkin-daily-20250126.csv"
 │
 ├─ Load routing rules from S3 config
-├─ Check folder: "app/" matches rule source_pattern ✅
+├─ Check folder: "loyalty/" matches rule source_pattern ✅
 ├─ Check filename: "checkin-daily-20250126.csv" starts with "checkin-" ✅
-├─ Copy to: "app/CheckIns/raw/checkin-daily-20250126_20250126_120000.csv"
+├─ Copy to: "loyalty/CheckIns/raw/checkin-daily-20250126_20250126_120000.csv"
 └─ Delete source (if configured) ✅
 ```
 
